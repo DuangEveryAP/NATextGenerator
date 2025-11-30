@@ -17,10 +17,28 @@ NATextGenerator是一个程序，用于给软件 NavalArt 生成文本，对输�
 FreeType 项目：Portions of this software are copyright © 2025 The FreeType Project (https://freetype.org). All rights reserved.
 本软件按原样提供，无任何担保。详情请参阅附带的 LICENSE 文件。
 
-##程序说明
+程序说明
 NATextGenerator处于测试阶段，生成内容不稳定，需要手动调整，请您见谅。
 部分字体可能不支持所有文本。
 本程序可能不支持某些字体类型。
 支持与反馈
 如有问题或建议，请联系2442729142@qq.com或wu_xingjian@126.com并说明来意。
-##版本0.1.0
+
+许可
+版权所有 (c) 2025 WuXingJian。保留所有权利。
+本程序是自由软件，遵循GPLv2发布。
+详情请见：https://www.gnu.org/licenses/
+本软件按原样提供，无任何明示或暗示担保。
+详情请参阅LICENSE。
+
+第三方库及字体许可证
+本软件使用了 FreeType 库，其许可证为 FreeType Project License (FTL)。
+FreeType 库按原样提供，无任何担保。
+许可证详情见"./LICENSES/LIBS/FreeTypeLICENSE.txt"和"./docs/FTL.TXT"。
+
+本程序包含思源系列字体，许可证基于SIL OPEN FONT LICENSE Version 1.1。
+思源系列字体按原样提供，无任何担保。
+详情见"./LICENSES/FONTS/SourceHanSansSC_LICENSE.txt"。
+
+本程序使用了 MinGW-64 运行时库（基于 MIT 许可证）。
+详情见"./LICENSES/LIBS/MIT.txt"
