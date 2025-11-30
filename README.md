@@ -16,7 +16,7 @@ NATextGenerator是一个程序，用于给软件 NavalArt 生成文本，对输�
 1、请输入带后缀的字体文件名。
 2、输入字体精度（建议在100~500）和大小（单位：m）。
 3、输入想要生成的文本（如CLLL）并结束输入。
-4、生成完毕后，刷新文件资源管理器，你会发现output.na文件。你可以把它复制或移动到NavalArt的存档文件夹中（通常位于C:\Users\你的用户名\AppData\LocalLow\RZEntertainment\NavalArt\ShipSaves或在NavalArt加载界面选择浏览本地文件夹）。
+4、生成完毕后，刷新文件资源管理器，你会发现output.na文件。你可以把它复制或移动到NavalArt的存档文件夹中（通常位于C:\Users\你的用户名\AppData\LocalLow\RZEntertainment\NavalArt\ShipSaves或在NavalArt加载界面选择浏览本地文件夹），然后制作为自定义零件（使用高级功能中的全选）。
 5、程序可以继续生成文本，若要结束程序，请按下Ctrl+C或点击右上角关闭程序。
 
 第三方库信用
@@ -30,7 +30,9 @@ FreeType 项目：Portions of this software are copyright © 2025 The FreeType P
 NATextGenerator处于测试阶段，生成内容不稳定，需要手动调整，请您见谅。
 部分字体可能不支持所有文本。
 本程序可能不支持某些字体类型。
+
 支持与反馈
+
 如有问题或建议，请联系2442729142@qq.com或wu_xingjian@126.com并说明来意。
 本项目在GitHub上开源：https://github.com/DuangEveryAP/NATextGenerator
 
