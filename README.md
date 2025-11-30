@@ -32,6 +32,7 @@ NATextGenerator处于测试阶段，生成内容不稳定，需要手动调整�
 本程序可能不支持某些字体类型。
 支持与反馈
 如有问题或建议，请联系2442729142@qq.com或wu_xingjian@126.com并说明来意。
+本项目在GitHub上开源：https://github.com/DuangEveryAP/NATextGenerator
 
 许可
 
