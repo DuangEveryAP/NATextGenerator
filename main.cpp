@@ -5,6 +5,8 @@
 #include <cmath>
 #include <algorithm>
 #include <cstdint>
+#include <windows.h>
+
 
 
 #define INF 1000000000.0f
@@ -21,7 +23,7 @@ FT_Error Error;
 //AB
 //CD like a "z"
 
-// UTF-8½âÂëº¯Êı
+// UTF-8è§£ç å‡½æ•°
 std::vector<uint32_t> decodeUTF8(const char *utf8_str) {
 	std::vector<uint32_t> unicode_chars;
 	const unsigned char *p = reinterpret_cast<const unsigned char *>(utf8_str);
@@ -68,12 +70,12 @@ std::vector<uint32_t> decodeUTF8(const char *utf8_str) {
 int FTM(char src[], float size, int dpi) {
 	FT_Library library;
 	FT_Face face;
-	// ³õÊ¼»¯freetype¿â
+	// åˆå§‹åŒ–freetypeåº“
 	FT_Error error = FT_Init_FreeType(&library);
 	if (error) {
 		return -1;
 	}
-	// ³¢ÊÔ¼ÓÔØ×ÖÌåÎÄ¼ş
+	// å°è¯•åŠ è½½å­—ä½“æ–‡ä»¶
 	error = FT_New_Face(library, src, 0, &face);
 	if (error) {
 		Error = error;
@@ -103,28 +105,28 @@ int FTM(char src[], float size, int dpi) {
 			FT_Done_FreeType(library);
 			return -1;
 		}
-		int left = glyph->bitmap_left;      // Î»Í¼×ó²àµ½Ô­µãµÄË®Æ½¾àÀë
-		int top = glyph->bitmap_top;        // Î»Í¼¶¥²¿µ½»ùÏßµÄ´¹Ö±¾àÀë
+		int left = glyph->bitmap_left;      // ä½å›¾å·¦ä¾§åˆ°åŸç‚¹çš„æ°´å¹³è·ç¦»
+		int top = glyph->bitmap_top;        // ä½å›¾é¡¶éƒ¨åˆ°åŸºçº¿çš„å‚ç›´è·ç¦»
 		int outn = 0;
 		int inn = 0;
 		for (int i = 0; i < bitmap.rows; i++) {
 			bool started = false;
 			for (int j = 0; j < bitmap.width; j++) {
-				// ¼ÆËã×Ö½ÚË÷ÒıºÍÎ»Ë÷Òı(µ¥É«Î»Í¼, MSB ÓÅÏÈ)
+				// è®¡ç®—å­—èŠ‚ç´¢å¼•å’Œä½ç´¢å¼•(å•è‰²ä½å›¾, MSB ä¼˜å…ˆ)
 				int byte_index = j / 8;
-				int bit_index = 7 - (j % 8); // MSB ¶ÔÓ¦×î×óÏñËØ
+				int bit_index = 7 - (j % 8); // MSB å¯¹åº”æœ€å·¦åƒç´ 
 				unsigned char byte = bitmap.buffer[i * bitmap.pitch + byte_index];
 
-				// ¼ì²éÏñËØÊÇ·ñÉèÖÃ£¨·ÇÁã£©
+				// æ£€æŸ¥åƒç´ æ˜¯å¦è®¾ç½®ï¼ˆéé›¶ï¼‰
 				if (byte & (1 << bit_index)) {
-					// Ìî³ä²¿·Ö
+					// å¡«å……éƒ¨åˆ†
 					if (!started) {
 						started = true;
 						vertexData[facen][0][0] = (penX + j + left) / (float)dpi * size;
 						vertexData[facen][0][1] = (top - i) / (float)dpi * size;
 						vertexData[facen][2][0] = (penX + j + left) / (float)dpi * size;
 						vertexData[facen][2][1] = (top - i - 1) / (float)dpi * size;
-						//ÅĞ¶ÏÊÇ·ñÎª¡°Íâµã"
+						//åˆ¤æ–­æ˜¯å¦ä¸ºâ€œå¤–ç‚¹"
 						bool upo = false;
 						if (i == 0) {
 							upo = true;
@@ -155,9 +157,9 @@ int FTM(char src[], float size, int dpi) {
 							Outvertex[outn][2] = 3;//C
 							outn++;
 						}
-						//ÅĞ¶ÏÊÇ·ñÎª¡°ÄÚµã"
+						//åˆ¤æ–­æ˜¯å¦ä¸ºâ€œå†…ç‚¹"
 						int byte_index = (j - 1) / 8;
-						int bit_index = 7 - ((j - 1) % 8); // MSB ¶ÔÓ¦×î×óÏñËØ
+						int bit_index = 7 - ((j - 1) % 8); // MSB å¯¹åº”æœ€å·¦åƒç´ 
 						bool upi = false;
 						if (j != 0 and i != 0) {
 							unsigned char byteU = bitmap.buffer[i * bitmap.pitch + byte_index - bitmap.pitch];
@@ -186,14 +188,14 @@ int FTM(char src[], float size, int dpi) {
 						}
 					}
 				} else {
-					// ¿Õ°×²¿·Ö
+					// ç©ºç™½éƒ¨åˆ†
 					if (started) {
 						started = false;
 						vertexData[facen][1][0] = (penX + j + left) / (float)dpi * size;
 						vertexData[facen][1][1] = (top - i) / (float)dpi * size;
 						vertexData[facen][3][0] = (penX + j + left) / (float)dpi * size;
 						vertexData[facen][3][1] = (top - i - 1) / (float)dpi * size;
-						for (int k = yfacen; k < facen; k++) { //ºÏ²¢ÏàÍ¬Ãæ
+						for (int k = yfacen; k < facen; k++) { //åˆå¹¶ç›¸åŒé¢
 							if (vertexData[k][3][0] == vertexData[facen][1][0] and vertexData[k][2][0] == vertexData[facen][0][0]
 							        and vertexData[k][3][1] == vertexData[facen][1][1] and vertexData[k][2][1] == vertexData[facen][0][1]) {
 								vertexData[k][2][0] = vertexData[facen][2][0];
@@ -209,9 +211,9 @@ int FTM(char src[], float size, int dpi) {
 							return facen;
 						}
 						int byte_index = (j - 1) / 8;
-						int bit_index = 7 - ((j - 1) % 8); // MSB ¶ÔÓ¦×î×óÏñËØ
+						int bit_index = 7 - ((j - 1) % 8); // MSB å¯¹åº”æœ€å·¦åƒç´ 
 
-						//ÅĞ¶ÏÊÇ·ñÎª¡°Íâµã"
+						//åˆ¤æ–­æ˜¯å¦ä¸ºâ€œå¤–ç‚¹"
 						bool upo = false;
 						if (i == 0) {
 							upo = true;
@@ -242,9 +244,9 @@ int FTM(char src[], float size, int dpi) {
 							Outvertex[inn][2] = 4;//D
 							outn++;
 						}
-						//ÅĞ¶ÏÊÇ·ñÎª¡°ÄÚµã"
+						//åˆ¤æ–­æ˜¯å¦ä¸ºâ€œå†…ç‚¹"
 						byte_index = j / 8;
-						bit_index = 7 - (j % 8); // MSB ¶ÔÓ¦×î×óÏñËØ
+						bit_index = 7 - (j % 8); // MSB å¯¹åº”æœ€å·¦åƒç´ 
 						bool upi = false;
 						if (i != 0) {
 							unsigned char byteU = bitmap.buffer[i * bitmap.pitch + byte_index - bitmap.pitch];
@@ -274,13 +276,13 @@ int FTM(char src[], float size, int dpi) {
 					}
 				}
 			}
-			//Ç¿ÖÆ½áÊø
+			//å¼ºåˆ¶ç»“æŸ
 			if (started) {
 				vertexData[facen][1][0] = (penX + bitmap.width + left) / (float)dpi * size;
 				vertexData[facen][1][1] = (top - i) / (float)dpi * size;
 				vertexData[facen][3][0] = (penX + bitmap.width + left) / (float)dpi * size;
 				vertexData[facen][3][1] = (top - i - 1) / (float)dpi * size;
-				for (int k = yfacen; k < facen; k++) { //ºÏ²¢ÏàÍ¬Ãæ
+				for (int k = yfacen; k < facen; k++) { //åˆå¹¶ç›¸åŒé¢
 					if (vertexData[k][3][0] == vertexData[facen][1][0] and vertexData[k][2][0] == vertexData[facen][0][0]
 					        and vertexData[k][3][1] == vertexData[facen][1][1] and vertexData[k][2][1] == vertexData[facen][0][1]) {
 						vertexData[k][2][0] = vertexData[facen][2][0];
@@ -296,8 +298,8 @@ int FTM(char src[], float size, int dpi) {
 					return facen;
 
 				int byte_index = (bitmap.width - 1) / 8;
-				int bit_index = 7 - ((bitmap.width - 1) % 8); // MSB ¶ÔÓ¦×î×óÏñËØ
-				//ÅĞ¶ÏÊÇ·ñÎª¡°Íâµã"
+				int bit_index = 7 - ((bitmap.width - 1) % 8); // MSB å¯¹åº”æœ€å·¦åƒç´ 
+				//åˆ¤æ–­æ˜¯å¦ä¸ºâ€œå¤–ç‚¹"
 				bool upo = false;
 				if (i == 0) {
 					upo = true;
@@ -326,7 +328,7 @@ int FTM(char src[], float size, int dpi) {
 					Outvertex[outn][1] = (top - i - 1) / (float)dpi * size;
 					outn++;
 				}
-				//²»¿ÉÄÜÎªÄÚµã
+				//ä¸å¯èƒ½ä¸ºå†…ç‚¹
 			}
 		}
 		for (int i = 0; i < inn; i++) {
@@ -334,8 +336,8 @@ int FTM(char src[], float size, int dpi) {
 			float y1 = Invertex[i][1];
 			int type = (int)(Invertex[i][2] + 0.5);
 
-			//Ã¿¸öÄÚµã
-			//×î½üµÄyµã
+			//æ¯ä¸ªå†…ç‚¹
+			//æœ€è¿‘çš„yç‚¹
 			float y2 = INF;
 			for (int j = 0; j < outn; j++) {
 				if ((type - 2.5) * (Outvertex[j][1] - y1) > 0) {
@@ -352,7 +354,7 @@ int FTM(char src[], float size, int dpi) {
 					}
 				}
 			}
-			//×î½üµÄxµã
+			//æœ€è¿‘çš„xç‚¹
 			float x2 = INF;
 			for (int j = 0; j < outn; j++) {
 				if ((type % 2 - 0.5) * (x1 - Outvertex[j][0]) > 0) {
@@ -382,7 +384,7 @@ int FTM(char src[], float size, int dpi) {
 						vertexData[facen][3][0] = x2;
 						vertexData[facen][3][1] = y1;
 						if (abs(1 / (float)dpi * size - abs(y2 - y1)) < 0.001f) {
-							for (int k = yfacen; k < facen; k++) { //ºÏ²¢ÏàÍ¬Ãæ
+							for (int k = yfacen; k < facen; k++) { //åˆå¹¶ç›¸åŒé¢
 								if (vertexData[k][0][0] == x1 and vertexData[k][2][0] == x1 and
 								        vertexData[k][0][1] == y2 and vertexData[k][2][1] == y1 and type == 3) {
 									vertexData[k][2][0] = x2;
@@ -407,7 +409,7 @@ int FTM(char src[], float size, int dpi) {
 						vertexData[facen][3][0] = x2;
 						vertexData[facen][3][1] = y1;
 						if (abs(1 / (float)dpi * size - abs(y2 - y1)) < 0.001f) {
-							for (int k = yfacen; k < facen; k++) { //ºÏ²¢ÏàÍ¬Ãæ
+							for (int k = yfacen; k < facen; k++) { //åˆå¹¶ç›¸åŒé¢
 								if (vertexData[k][0][0] == x1 and vertexData[k][2][0] == x1 and
 								        vertexData[k][0][1] == y1 and vertexData[k][2][1] == y2 and type == 1) {
 									vertexData[k][0][0] = x2;
@@ -443,22 +445,24 @@ int FTM(char src[], float size, int dpi) {
 
 
 int main() {
+	SetConsoleOutputCP(65001); // è®¾ç½®æ§åˆ¶å°è¾“å‡ºç¼–ç 
+	SetConsoleCP(65001);       // è®¾ç½®æ§åˆ¶å°è¾“å…¥ç¼–ç 
 	while (1) {
 		int dpi;
 		float size;
 		char name[256] = {0};
-		printf("ÇëÊäÈë×ÖÌåÃû³Æ£¨´øºó×º£©£º");
+		printf("è¯·è¾“å…¥å­—ä½“åç§°ï¼ˆå¸¦åç¼€ï¼‰ï¼š");
 		scanf("%s", name);
-		printf("ÇëÊäÈë¾«¶È(50~1000)£º");
+		printf("è¯·è¾“å…¥ç²¾åº¦(50~1000)ï¼š");
 		scanf("%d", &dpi);
 		if (dpi > 1000) {
 			dpi = 1000;
 		} else if (dpi < 50) {
 			dpi = 50;
 		}
-		printf("ÇëÊäÈë´óĞ¡£º");
+		printf("è¯·è¾“å…¥å¤§å°ï¼š");
 		scanf("%f", &size);
-		printf("ÇëÊäÈëÎÄ±¾(Windows»»ĞĞÔÙ°´ctrl+zºó»»ĞĞ½áÊøÊäÈë£¬²»Ö§³Ö»»ĞĞ·ûÖÆ±í·ûµÈ·ûºÅ):\n");
+		printf("è¯·è¾“å…¥æ–‡æœ¬(Windowsæ¢è¡Œå†æŒ‰ctrl+zåæ¢è¡Œç»“æŸè¾“å…¥ï¼Œä¸æ”¯æŒæ¢è¡Œç¬¦åˆ¶è¡¨ç¬¦ç­‰ç¬¦å·):\n");
 		{
 			int i;
 			for (i = 0; scanf("%c", s + i) != EOF and i < MAXLENGTH - 1; i++)
@@ -476,31 +480,22 @@ int main() {
 
 		if (ends == -1 or ends == 0) {
 			const char *error_string = FT_Error_String(Error);
-			printf("\nÉú³É³ö´í(´úÂë%d):%s\n", Error, error_string);
-			if ((int)Error == 1) {
-				printf("²»´æÔÚµÄ×ÖÌå\n");
-			}
-			char c;
-			printf("====°´ÏÂÈÎÒâ¼üÍË³ö====");
-			scanf("%c", &c);
+			printf("\nç”Ÿæˆå‡ºé”™(ä»£ç %d):%s\n", Error, error_string);
+
 			return (int)Error;
 		}
-		printf("\nÉú³ÉÍê³É:×Ü¼Æ %d ¸öÃæ¡£\n", ends);
+		printf("\nç”Ÿæˆå®Œæˆ:æ€»è®¡ %d ä¸ªé¢ã€‚\n", ends);
 
 		if (ends >= MAXLENGTH * DPI - 1) {
-			printf("´íÎó:Ãæ¹ı¶à£¬Çë½µµÍ¾«¶È¡£\n");
-			char c;
-			printf("====°´ÏÂÈÎÒâ¼üÍË³ö====");
-			scanf("%c", &c);
+			printf("é”™è¯¯:é¢è¿‡å¤šï¼Œè¯·é™ä½ç²¾åº¦ã€‚\n");
 			return 1;
 		}
-		printf("Ğ´Èëoutput.naÖĞ: %s\n", s);
+		printf("å†™å…¥output.naä¸­: %s\n", s);
 
 		FILE *f = freopen("output.na", "w", stdout);
 
-		//Í·²¿
-		printf("<root>\n  <ship author=\"Duang's ttf generator\" description=\"%s\" alwaysgeneratenewthumbnail=\"True\" hornType=\"1\" hornPitch=\"1\" tracerCol=\"E53D4FFF\">\n",
-		       s);
+		//å¤´éƒ¨
+		printf("<root>\n  <ship author=\"Duang's generator\" description=\"%s By Duang's generator.\" alwaysgeneratenewthumbnail=\"True\" hornType=\"1\" hornPitch=\"1\" tracerCol=\"E53D4FFF\">\n" , s);
 
 		for (int i = 0; i < ends; i++) {
 			printf("    <part id=\"701\" instanceId=\"%d\">\n", i);
@@ -522,13 +517,10 @@ int main() {
 		printf("  </ship>\n</root>");
 		fclose(f);
 		if (freopen("CON", "w", stdout) == nullptr) {
-			perror("Failed to reopen CON");
-			char c;
-			printf("====°´ÏÂÈÎÒâ¼üÍË³ö====");
-			scanf("%c", &c);
+			printf("Failed to reopen CON");
 			return 1;
 		}
-		printf("°´ÏÂctrl+CÒÔ½áÊø³ÌĞò...\n");
+		printf("æŒ‰ä¸‹ctrl+Cä»¥ç»“æŸç¨‹åº...\n");
 	}
 
 
