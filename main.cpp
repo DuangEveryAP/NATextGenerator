@@ -7,11 +7,13 @@
 #include <cstdint>
 #include <windows.h>
 
+//encoding utf-8
 
 
 #define INF 1000000000.0f
 
-const int DPI = 512;
+const int DPI = 1000;
+const int bitdpi = 10000;
 const int MAXLENGTH = 200;
 
 //support utf-8
@@ -70,7 +72,7 @@ std::vector<uint32_t> decodeUTF8(const char *utf8_str) {
 int FTM(char src[], float size, int dpi) {
 	FT_Library library;
 	FT_Face face;
-	// 初始化freetype库
+	// 初始化freetype
 	FT_Error error = FT_Init_FreeType(&library);
 	if (error) {
 		return -1;
@@ -83,7 +85,7 @@ int FTM(char src[], float size, int dpi) {
 		return -1;
 	}
 
-	FT_Set_Pixel_Sizes(face, 0, dpi);
+	FT_Set_Pixel_Sizes(face, 0, bitdpi);
 
 	std::vector<uint32_t> unicode_chars = decodeUTF8(s);
 
@@ -109,7 +111,8 @@ int FTM(char src[], float size, int dpi) {
 		int top = glyph->bitmap_top;        // 位图顶部到基线的垂直距离
 		int outn = 0;
 		int inn = 0;
-		for (int i = 0; i < bitmap.rows; i++) {
+		int dw1 = bitdpi / dpi;
+		for (int i = 0; i < bitmap.rows; i += dw1) {
 			bool started = false;
 			for (int j = 0; j < bitmap.width; j++) {
 				// 计算字节索引和位索引(单色位图, MSB 优先)
@@ -122,67 +125,67 @@ int FTM(char src[], float size, int dpi) {
 					// 填充部分
 					if (!started) {
 						started = true;
-						vertexData[facen][0][0] = (penX + j + left) / (float)dpi * size;
-						vertexData[facen][0][1] = (top - i) / (float)dpi * size;
-						vertexData[facen][2][0] = (penX + j + left) / (float)dpi * size;
-						vertexData[facen][2][1] = (top - i - 1) / (float)dpi * size;
-						//判断是否为“外点"
+						vertexData[facen][0][0] = (penX + j + left) / (float)bitdpi * size;
+						vertexData[facen][0][1] = (top - i) / (float)bitdpi * size;
+						vertexData[facen][2][0] = (penX + j + left) / (float)bitdpi * size;
+						vertexData[facen][2][1] = (top - i - dw1) / (float)bitdpi * size;
+						//判断是否为“外”点
 						bool upo = false;
 						if (i == 0) {
 							upo = true;
 						} else {
-							unsigned char byteU = bitmap.buffer[i * bitmap.pitch + byte_index - bitmap.pitch];
+							unsigned char byteU = bitmap.buffer[(i-dw1) * bitmap.pitch + byte_index];
 							if (!(byteU & (1 << bit_index))) {
 								upo = true;
 							}
 						}
 						bool dwo = false;
-						if (i == bitmap.rows - 1) {
+						if (i >= bitmap.rows - dw1) {
 							dwo = true;
 						} else {
-							unsigned char byteD = bitmap.buffer[i * bitmap.pitch + byte_index + bitmap.pitch];
+							unsigned char byteD = bitmap.buffer[(i+dw1) * bitmap.pitch + byte_index];
 							if (!(byteD & (1 << bit_index))) {
 								dwo = true;
 							}
 						}
 						if (upo) {
-							Outvertex[outn][0] = (penX + j + left) / (float)dpi * size;
-							Outvertex[outn][1] = (top - i) / (float)dpi * size;
+							Outvertex[outn][0] = (penX + j + left) / (float)bitdpi * size;
+							Outvertex[outn][1] = (top - i) / (float)bitdpi * size;
 							Outvertex[outn][2] = 1;//A
 							outn++;
 						}
 						if (dwo) {
-							Outvertex[outn][0] = (penX + j + left) / (float)dpi * size;
-							Outvertex[outn][1] = (top - i - 1) / (float)dpi * size;
+							Outvertex[outn][0] = (penX + j + left) / (float)bitdpi * size;
+							Outvertex[outn][1] = (top - i - dw1) / (float)bitdpi * size;
 							Outvertex[outn][2] = 3;//C
 							outn++;
 						}
-						//判断是否为“内点"
+						//判断是否为“内“点
 						int byte_index = (j - 1) / 8;
-						int bit_index = 7 - ((j - 1) % 8); // MSB 对应最左像素
+						int bit_index = 7 - ((j - 1) % 8);
 						bool upi = false;
-						if (j != 0 and i != 0) {
-							unsigned char byteU = bitmap.buffer[i * bitmap.pitch + byte_index - bitmap.pitch];
+						if (j >= 1 and i >= dw1) {
+							unsigned char byteU = bitmap.buffer[(i-dw1) * bitmap.pitch + byte_index];
 							if (byteU & (1 << bit_index)) {
 								upi = true;
 							}
 						}
 						bool dwi = false;
-						if (j != 0 and i !=  bitmap.rows - 1) {
-							unsigned char byteD = bitmap.buffer[i * bitmap.pitch + byte_index + bitmap.pitch];
+						if (j >= 1 and i <  bitmap.rows - dw1) {
+							unsigned char byteD = bitmap.buffer[(i+dw1) * bitmap.pitch + byte_index];
 							if (byteD & (1 << bit_index)) {
 								dwi = true;
 							}
 						}
 						if (upi) {
-							Invertex[inn][0] = (penX + j + left) / (float)dpi * size;
-							Invertex[inn][1] = (top - i) / (float)dpi * size;
+							Invertex[inn][0] = (penX + j + left) / (float)bitdpi * size;
+							Invertex[inn][1] = (top - i) / (float)bitdpi * size;
 							Invertex[inn][2] = 1;//A
 							inn++;
 						}
 						if (dwi) {
-							Invertex[inn][0] = (penX + j + left) / (float)dpi * size;
-							Invertex[inn][1] = (top - i - 1) / (float)dpi * size;
+							Invertex[inn][0] = (penX + j + left) / (float)bitdpi * size;
+							Invertex[inn][1] = (top - i - dw1) / (float)bitdpi * size;
 							Invertex[inn][2] = 3;//C
 							inn++;
 						}
@@ -191,10 +194,10 @@ int FTM(char src[], float size, int dpi) {
 					// 空白部分
 					if (started) {
 						started = false;
-						vertexData[facen][1][0] = (penX + j + left) / (float)dpi * size;
-						vertexData[facen][1][1] = (top - i) / (float)dpi * size;
-						vertexData[facen][3][0] = (penX + j + left) / (float)dpi * size;
-						vertexData[facen][3][1] = (top - i - 1) / (float)dpi * size;
+						vertexData[facen][1][0] = (penX + j + left) / (float)bitdpi * size;
+						vertexData[facen][1][1] = (top - i) / (float)bitdpi * size;
+						vertexData[facen][3][0] = (penX + j + left) / (float)bitdpi * size;
+						vertexData[facen][3][1] = (top - i - dw1) / (float)bitdpi * size;
 						for (int k = yfacen; k < facen; k++) { //合并相同面
 							if (vertexData[k][3][0] == vertexData[facen][1][0] and vertexData[k][2][0] == vertexData[facen][0][0]
 							        and vertexData[k][3][1] == vertexData[facen][1][1] and vertexData[k][2][1] == vertexData[facen][0][1]) {
@@ -211,65 +214,65 @@ int FTM(char src[], float size, int dpi) {
 							return facen;
 						}
 						int byte_index = (j - 1) / 8;
-						int bit_index = 7 - ((j - 1) % 8); // MSB 对应最左像素
+						int bit_index = 7 - ((j - 1) % 8); 
 
-						//判断是否为“外点"
+						//判断是否为“外”点
 						bool upo = false;
-						if (i == 0) {
+						if (i <= dw1) {
 							upo = true;
 						} else {
-							unsigned char byteU = bitmap.buffer[i * bitmap.pitch + byte_index - bitmap.pitch];
+							unsigned char byteU = bitmap.buffer[(i-dw1) * bitmap.pitch + byte_index];
 							if (!(byteU & (1 << bit_index))) {
 								upo = true;
 							}
 						}
 						bool dwo = false;
-						if (i == bitmap.rows - 1) {
+						if (i >= bitmap.rows - dw1) {
 							dwo = true;
 						} else {
-							unsigned char byteD = bitmap.buffer[i * bitmap.pitch + byte_index + bitmap.pitch];
+							unsigned char byteD = bitmap.buffer[(i+dw1) * bitmap.pitch + byte_index];
 							if (!(byteD & (1 << bit_index))) {
 								dwo = true;
 							}
 						}
 						if (upo) {
-							Outvertex[outn][0] = (penX + j + left) / (float)dpi * size;
-							Outvertex[outn][1] = (top - i) / (float)dpi * size;
+							Outvertex[outn][0] = (penX + j + left) / (float)bitdpi * size;
+							Outvertex[outn][1] = (top - i) / (float)bitdpi * size;
 							Outvertex[inn][2] = 2;//B
 							outn++;
 						}
 						if (dwo) {
-							Outvertex[outn][0] = (penX + j + left) / (float)dpi * size;
-							Outvertex[outn][1] = (top - i - 1) / (float)dpi * size;
+							Outvertex[outn][0] = (penX + j + left) / (float)bitdpi * size;
+							Outvertex[outn][1] = (top - i - dw1) / (float)bitdpi * size;
 							Outvertex[inn][2] = 4;//D
 							outn++;
 						}
-						//判断是否为“内点"
+						//判断是否为“内“点
 						byte_index = j / 8;
-						bit_index = 7 - (j % 8); // MSB 对应最左像素
+						bit_index = 7 - (j % 8);
 						bool upi = false;
-						if (i != 0) {
-							unsigned char byteU = bitmap.buffer[i * bitmap.pitch + byte_index - bitmap.pitch];
+						if (i > dw1) {
+							unsigned char byteU = bitmap.buffer[(i-dw1) * bitmap.pitch + byte_index];
 							if (byteU & (1 << bit_index)) {
 								upi = true;
 							}
 						}
 						bool dwi = false;
-						if (i != bitmap.rows - 1) {
-							unsigned char byteD = bitmap.buffer[i * bitmap.pitch + byte_index + bitmap.pitch];
+						if (i < bitmap.rows - dw1) {
+							unsigned char byteD = bitmap.buffer[(i+dw1) * bitmap.pitch + byte_index];
 							if (byteD & (1 << bit_index)) {
 								dwi = true;
 							}
 						}
 						if (upi) {
-							Invertex[inn][0] = (penX + j + left) / (float)dpi * size;
-							Invertex[inn][1] = (top - i) / (float)dpi * size;
+							Invertex[inn][0] = (penX + j + left) / (float)bitdpi * size;
+							Invertex[inn][1] = (top - i) / (float)bitdpi * size;
 							Invertex[inn][2] = 2;//B
 							inn++;
 						}
 						if (dwi) {
-							Invertex[inn][0] = (penX + j + left) / (float)dpi * size;
-							Invertex[inn][1] = (top - i - 1) / (float)dpi * size;
+							Invertex[inn][0] = (penX + j + left) / (float)bitdpi * size;
+							Invertex[inn][1] = (top - i - dw1) / (float)bitdpi * size;
 							Invertex[inn][2] = 4;//D
 							inn++;
 						}
@@ -278,10 +281,10 @@ int FTM(char src[], float size, int dpi) {
 			}
 			//强制结束
 			if (started) {
-				vertexData[facen][1][0] = (penX + bitmap.width + left) / (float)dpi * size;
-				vertexData[facen][1][1] = (top - i) / (float)dpi * size;
-				vertexData[facen][3][0] = (penX + bitmap.width + left) / (float)dpi * size;
-				vertexData[facen][3][1] = (top - i - 1) / (float)dpi * size;
+				vertexData[facen][1][0] = (penX + bitmap.width + left) / (float)bitdpi * size;
+				vertexData[facen][1][1] = (top - i) / (float)bitdpi * size;
+				vertexData[facen][3][0] = (penX + bitmap.width + left) / (float)bitdpi * size;
+				vertexData[facen][3][1] = (top - i - dw1) / (float)bitdpi * size;
 				for (int k = yfacen; k < facen; k++) { //合并相同面
 					if (vertexData[k][3][0] == vertexData[facen][1][0] and vertexData[k][2][0] == vertexData[facen][0][0]
 					        and vertexData[k][3][1] == vertexData[facen][1][1] and vertexData[k][2][1] == vertexData[facen][0][1]) {
@@ -298,34 +301,34 @@ int FTM(char src[], float size, int dpi) {
 					return facen;
 
 				int byte_index = (bitmap.width - 1) / 8;
-				int bit_index = 7 - ((bitmap.width - 1) % 8); // MSB 对应最左像素
-				//判断是否为“外点"
+				int bit_index = 7 - ((bitmap.width - 1) % 8);
+				//判断是否为“点”
 				bool upo = false;
-				if (i == 0) {
+				if (i <= dw1) {
 					upo = true;
 				} else {
-					unsigned char byteU = bitmap.buffer[i * bitmap.pitch + byte_index - bitmap.pitch];
+					unsigned char byteU = bitmap.buffer[(i-dw1) * bitmap.pitch + byte_index];
 					if (!(byteU & (1 << bit_index))) {
 						upo = true;
 					}
 				}
 				bool dwo = false;
-				if (i == bitmap.rows - 1) {
+				if (i >= bitmap.rows - dw1) {
 					dwo = true;
 				} else {
-					unsigned char byteD = bitmap.buffer[i * bitmap.pitch + byte_index + bitmap.pitch];
+					unsigned char byteD = bitmap.buffer[(i+dw1) * bitmap.pitch + byte_index];
 					if (!(byteD & (1 << bit_index))) {
 						dwo = true;
 					}
 				}
 				if (upo) {
-					Outvertex[outn][0] = (penX + bitmap.width + left) / (float)dpi * size;
-					Outvertex[outn][1] = (top - i) / (float)dpi * size;
+					Outvertex[outn][0] = (penX + bitmap.width + left) / (float)bitdpi * size;
+					Outvertex[outn][1] = (top - i) / (float)bitdpi * size;
 					outn++;
 				}
 				if (dwo) {
-					Outvertex[outn][0] = (penX + bitmap.width + left) / (float)dpi * size;
-					Outvertex[outn][1] = (top - i - 1) / (float)dpi * size;
+					Outvertex[outn][0] = (penX + bitmap.width + left) / (float)bitdpi * size;
+					Outvertex[outn][1] = (top - i - dw1) / (float)bitdpi * size;
 					outn++;
 				}
 				//不可能为内点
@@ -371,9 +374,9 @@ int FTM(char src[], float size, int dpi) {
 					}
 				}
 			}
-			if (y2 != INF && x2 != INF && abs(x2 - x1) < bitmap.width / (float)dpi * size * 0.5
-			        && abs(y2 - y1) < bitmap.width / (float)dpi * size * 0.5) {
-				if (abs((x2 - x1) * (y2 - y1)) < bitmap.width * bitmap.rows / (float)dpi * size / (float)dpi * size * 0.01) {
+			if (y2 != INF && x2 != INF && abs(x2 - x1) < bitmap.width / (float)bitdpi * size * 0.5
+			        && abs(y2 - y1) < bitmap.width / (float)bitdpi * size * 0.5) {
+				if (abs((x2 - x1) * (y2 - y1)) < bitmap.width * bitmap.rows / (float)bitdpi * size / (float)bitdpi * size * 0.01) {
 					if ((x2 - x1) * (y2 - y1) < 0) {
 						vertexData[facen][0][0] = x1;
 						vertexData[facen][0][1] = y1;
@@ -385,14 +388,14 @@ int FTM(char src[], float size, int dpi) {
 						vertexData[facen][3][1] = y1;
 						if (abs(1 / (float)dpi * size - abs(y2 - y1)) < 0.001f) {
 							for (int k = yfacen; k < facen; k++) { //合并相同面
-								if (vertexData[k][0][0] == x1 and vertexData[k][2][0] == x1 and
-								        vertexData[k][0][1] == y2 and vertexData[k][2][1] == y1 and type == 3) {
+								if (abs(vertexData[k][0][0] - x1) < size/(float)bitdpi and abs(vertexData[k][2][0] - x1) < size/(float)bitdpi and
+								    abs(vertexData[k][0][1] - y2) < size/(float)bitdpi and abs(vertexData[k][2][1] - y1) < size/(float)bitdpi and type == 3) {
 									vertexData[k][2][0] = x2;
 									facen--;
 									break;
 								}
-								if (vertexData[k][1][0] == x1 and vertexData[k][3][0] == x1 and
-								        vertexData[k][1][1] == y1 and vertexData[k][3][1] == y2 and type == 2) {
+								if (abs(vertexData[k][1][0] - x1) < size/(float)bitdpi and abs(vertexData[k][3][0] - x1) < size/(float)bitdpi and
+								    abs(vertexData[k][1][1] - y1) < size/(float)bitdpi and abs(vertexData[k][3][1] - y2) < size/(float)bitdpi and type == 2) {
 									vertexData[k][1][0] = x2;
 									facen--;
 									break;
@@ -410,14 +413,14 @@ int FTM(char src[], float size, int dpi) {
 						vertexData[facen][3][1] = y1;
 						if (abs(1 / (float)dpi * size - abs(y2 - y1)) < 0.001f) {
 							for (int k = yfacen; k < facen; k++) { //合并相同面
-								if (vertexData[k][0][0] == x1 and vertexData[k][2][0] == x1 and
-								        vertexData[k][0][1] == y1 and vertexData[k][2][1] == y2 and type == 1) {
+								if (abs(vertexData[k][0][0] - x1) < size/(float)bitdpi and abs(vertexData[k][2][0] - x1) < size/(float)bitdpi and
+								    abs(vertexData[k][0][1] - y1) < size/(float)bitdpi and abs(vertexData[k][2][1] - y2) < size/(float)bitdpi and type == 1) {
 									vertexData[k][0][0] = x2;
 									facen--;
 									break;
 								}
-								if (vertexData[k][1][0] == x1 and vertexData[k][3][0] == x1 and
-								        vertexData[k][1][1] == y2 and vertexData[k][3][1] == y1 and type == 4) {
+								if (abs(vertexData[k][1][0] - x1) < size/(float)bitdpi and abs(vertexData[k][3][0] - x1) < size/(float)bitdpi and
+								    abs(vertexData[k][1][1] - y2) < size/(float)bitdpi and abs(vertexData[k][3][1] - y1) < size/(float)bitdpi and type == 4) {
 									vertexData[k][3][0] = x2;
 									facen--;
 									break;
@@ -451,21 +454,21 @@ int main() {
 		int dpi;
 		float size;
 		char name[256] = {0};
-		printf("请输入字体名称（带后缀）：");
+		printf("请输入字体名称(带后缀)：");
 		scanf("%s", name);
-		printf("请输入精度(50~1000)：");
-		scanf("%d", &dpi);
+		printf("请输入精度(20~1000)");
+		       scanf("%d", &dpi);
 		if (dpi > 1000) {
-			dpi = 1000;
-		} else if (dpi < 50) {
-			dpi = 50;
-		}
-		printf("请输入大小：");
-		scanf("%f", &size);
-		printf("请输入文本(Windows换行再按ctrl+z后换行结束输入，不支持换行符制表符等符号):\n");
-		{
-			int i;
-			for (i = 0; scanf("%c", s + i) != EOF and i < MAXLENGTH - 1; i++)
+		dpi = 1000;
+	} else if (dpi < 20) {
+		dpi = 20;
+	}
+	printf("请输入大小：");
+	scanf("%f", &size);
+	printf("请输入文本(Windows换行再按ctrl+z后换行结束输入，不支持换行符制表符等符号):\n");
+	{
+		int i;
+		for (i = 0; scanf("%c", s + i) != EOF and i < MAXLENGTH - 1; i++)
 				if (s[i] == '\n')
 					i--;
 			if (s[i] == '\n') {
@@ -475,11 +478,11 @@ int main() {
 		int ends;
 
 		char src[1024] = {0};
-		sprintf(src, "fonts/%s", name);
-		ends = FTM(src, size, dpi);
+		                 sprintf(src, "fonts/%s", name);
+		                 ends = FTM(src, size, dpi);
 
 		if (ends == -1 or ends == 0) {
-			const char *error_string = FT_Error_String(Error);
+		const char *error_string = FT_Error_String(Error);
 			printf("\n生成出错(代码%d):%s\n", Error, error_string);
 
 			return (int)Error;
@@ -487,18 +490,19 @@ int main() {
 		printf("\n生成完成:总计 %d 个面。\n", ends);
 
 		if (ends >= MAXLENGTH * DPI - 1) {
-			printf("错误:面过多，请降低精度。\n");
+		printf("错误:面过多，请降低精度。\n");
 			return 1;
 		}
-		printf("写入output.na中: %s\n", s);
+		printf("写入output.na: %s\n", s);
 
 		FILE *f = freopen("output.na", "w", stdout);
 
-		//头部
-		printf("<root>\n  <ship author=\"Duang's generator\" description=\"%s By Duang's generator.\" alwaysgeneratenewthumbnail=\"True\" hornType=\"1\" hornPitch=\"1\" tracerCol=\"E53D4FFF\">\n" , s);
+		          //头部
+		          printf("<root>\n  <ship author=\"Duang's generator\" description=\"%s By Duang's generator.\" alwaysgeneratenewthumbnail=\"True\" hornType=\"1\" hornPitch=\"1\" tracerCol=\"E53D4FFF\">\n"
+		                 , s);
 
 		for (int i = 0; i < ends; i++) {
-			printf("    <part id=\"701\" instanceId=\"%d\">\n", i);
+		printf("    <part id=\"701\" instanceId=\"%d\">\n", i);
 
 			printf("      <vertexData ax=\"%f\" ay=\"%f\" az=\"%f\" bx=\"%f\" by=\"%f\" bz=\"%f\" cx=\"%f\" cy=\"%f\" cz=\"%f\" dx=\"%f\" dy=\"%f\" dz=\"%f\"",
 			       0.1, vertexData[i][0][1], vertexData[i][0][0], 0.1, vertexData[i][1][1], vertexData[i][1][0], 0.1,
@@ -517,10 +521,10 @@ int main() {
 		printf("  </ship>\n</root>");
 		fclose(f);
 		if (freopen("CON", "w", stdout) == nullptr) {
-			printf("Failed to reopen CON");
+		printf("Failed to reopen CON");
 			return 1;
 		}
-		printf("按下ctrl+C以结束程序...\n");
+		printf("按下ctrl+C以结束程序 ...\n");
 	}
 
 
