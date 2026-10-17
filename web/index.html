@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>NATextGenerator - 文字转 NavalArt 存档</title>
+	<link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+	<header>
+		<div class="brand">NATextGenerator <span class="ver" id="ver">v0.4.0</span></div>
+		<div class="pipe">字体 → 矢量轮廓（贝塞尔/直线） → 多边形（含孔洞） → 三角面（处理凹陷） → NavalArt 零件</div>
+		<div id="status" class="status">准备中…</div>
+	</header>
+
+	<main>
+		<aside id="panel">
+			<section class="group">
+				<label class="title" for="font">字体</label>
+				<select id="font"></select>
+				<input id="fontPath" type="text" placeholder="也可直接填字体完整路径，如 C:\Windows\Fonts\msyh.ttc">
+				<div class="tiny" id="fontInfo"></div>
+			</section>
+
+			<section class="group">
+				<label class="title" for="text">文本</label>
+				<textarea id="text" rows="3" spellcheck="false">Navalart</textarea>
+				<div class="tiny">支持中文、空格；换行会当作空格</div>
+			</section>
+
+			<section class="group">
+				<label class="title">字号 <output id="sizeOut">10 m</output></label>
+				<input id="size" type="range" min="1" max="60" step="0.5" value="10">
+			</section>
+
+			<section class="group">
+				<label class="title">曲线质量 <output id="qualityOut">5</output></label>
+				<input id="quality" type="range" min="1" max="10" step="1" value="5">
+				<div class="tiny">质量越高越贴合曲线，但三角面更多</div>
+			</section>
+
+			<section class="group">
+				<label class="title" for="thickness">厚度 <output id="thickOut">0.20 m</output></label>
+				<input id="thickness" type="range" min="0.02" max="3" step="0.02" value="0.2">
+			</section>
+
+			<section class="group">
+				<label class="title" for="placement">放置方式</label>
+				<select id="placement">
+					<option value="plane">平面（贴在竖直平面上）</option>
+					<option value="surface">贝塞尔曲面（贴合弯面）</option>
+				</select>
+			</section>
+
+			<section class="group surface-only" id="surfacePanel" hidden>
+				<label class="title">曲面控制点</label>
+				<div class="seg" id="sunit">
+					<button type="button" data-unit="em" class="active">归一化</button>
+					<button type="button" data-unit="m">实测(米)</button>
+				</div>
+				<div class="preset-row">
+					<button type="button" class="mini" data-preset="flat">平直</button>
+					<button type="button" class="mini" data-preset="hbend">水平弯</button>
+					<button type="button" class="mini" data-preset="vbend">上下拱</button>
+					<button type="button" class="mini" data-preset="wave">波浪</button>
+					<button type="button" class="mini" data-preset="dome">穹顶</button>
+				</div>
+				<div class="cpgrid" id="cpGrid"></div>
+				<div class="tiny">点格子里的圆点选控制点（也可在 3D 里点圆点），选中会变色</div>
+
+				<div class="cp-edit">
+					<div class="cp-head"><span id="cpSelLabel">未选中控制点</span></div>
+					<div class="cp-xyz">
+						<label class="axis-x"><span>X</span><input id="cpx" type="text" inputmode="decimal" autocomplete="off"></label>
+						<label class="axis-y"><span>Y</span><input id="cpy" type="text" inputmode="decimal" autocomplete="off"></label>
+						<label class="axis-z"><span>Z</span><input id="cpz" type="text" inputmode="decimal" autocomplete="off"></label>
+					</div>
+				</div>
+
+				<div class="snap-row">
+					<label class="rowline"><input id="snapOn" type="checkbox" checked> 吸附</label>
+					<label class="rowline small">步长 <input id="snapStep" type="text" inputmode="decimal" value="0.05" autocomplete="off"></label>
+				</div>
+
+				<div class="tiny">坐标轴: x=厚度方向, y=向上, z=文字方向。归一化 = 以字高(em)为 1；实测 = 直接给米。</div>
+				<label class="rowline"><input id="flipNormal" type="checkbox"> 翻转厚度方向</label>
+				<div class="tiny" id="cpInfo"></div>
+			</section>
+
+			<section class="group checkline">
+				<label><input id="kerning" type="checkbox" checked> 字距调整</label>
+				<label><input id="quads" type="checkbox" checked> 合并四边形</label>
+				<label><input id="autowrite" type="checkbox" checked> 自动写入磁盘</label>
+			</section>
+
+			<section class="group">
+				<label class="title" for="out">输出文件名</label>
+				<input id="out" type="text" value="output.na">
+			</section>
+
+			<section class="group actions">
+				<button id="generate" class="primary">重新生成</button>
+				<a id="download" class="button disabled">下载 .na</a>
+			</section>
+
+			<section class="group tiny tips">
+				提示：绿色 = 浏览器用同一字体渲染的参考，红色 = 生成的多边形，黄色 = 完全重合。
+			</section>
+		</aside>
+
+		<section id="viewer">
+			<nav class="tabs">
+				<button data-tab="tab-2d" class="active">2D 叠图</button>
+				<button data-tab="tab-3d">3D 预览</button>
+				<button data-tab="tab-info">统计</button>
+			</nav>
+
+			<div id="tab-2d" class="tab active">
+				<div class="toolbar">
+					<label><input type="checkbox" id="showTri" checked> 三角面</label>
+					<label><input type="checkbox" id="showRef" checked> 参考字</label>
+					<label><input type="checkbox" id="showEdges"> 三角边</label>
+					<span class="spacer"></span>
+					<span class="tiny" id="flatHint"></span>
+					<span class="legend"><i class="sw tri"></i>生成 <i class="sw ref"></i>参考 <i class="sw both"></i>重合</span>
+				</div>
+				<div class="canvas-wrap"><canvas id="c2d"></canvas></div>
+			</div>
+
+			<div id="tab-3d" class="tab">
+				<div class="toolbar">
+					<span class="tiny" id="dragHint">点一下画面进入旋转（再点一次退出）· 滚轮缩放</span>
+					<span class="spacer"></span>
+					<span class="tiny" id="axisHint"></span>
+					<button id="reset3d" class="mini">复位视角</button>
+				</div>
+				<div class="canvas-wrap"><canvas id="c3d"></canvas></div>
+			</div>
+
+			<div id="tab-info" class="tab">
+				<pre id="info">尚未生成</pre>
+			</div>
+
+			<footer id="stats">&nbsp;</footer>
+		</section>
+	</main>
+
+	<script src="/app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,21 @@
+MinGW-w64 / GCC 运行时库许可说明
+=================================
+
+NATextGenerator.exe 使用 MinGW-w64 工具链编译，并静态链接了以下运行时组件：
+
+1) GCC 运行时库（libstdc++、libgcc）
+   采用 GNU GPL v3，并附有 GCC Runtime Library Exception（GCC 运行时例外）。
+   该例外明确允许把 GCC 运行时静态或动态链接进程序，且不会使该程序本身
+   受到 GPL 的约束（不要求程序也以 GPL 发布）。
+   例外全文：https://www.gnu.org/licenses/gcc-exception-3.1.html
+   GPLv3 全文：https://www.gnu.org/licenses/gpl-3.0.html
+
+2) MinGW-w64 的 C 运行时（mingw-w64-crt 等）
+   主要采用 Zope Public License 2.1，部分文件为公有领域或 BSD 风格许可。
+   详见 https://www.mingw-w64.org/ ，以及 MinGW-w64 发行包内附带的
+   COPYING.MinGW-w64-runtime 等文件。
+
+以上组件均按原样提供，无任何担保。
+
+说明：本项目早期版本的说明文档曾把这些组件笼统写作"MIT 许可证"，
+      该说法不准确，现由本文件取代（原 MIT.txt 已删除）。

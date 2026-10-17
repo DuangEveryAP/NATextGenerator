@@ -1,0 +1,41 @@
+# Project: NATextGenerator v0.3.0
+# 面向 MinGW-w64 (g++) 的 Makefile。
+# Windows 上若没有 make，直接用: powershell -ExecutionPolicy Bypass -File build.ps1
+#
+# 目标:
+#   make           构建 NATextGenerator.exe
+#   make assets    重新内嵌 web/ 下的前端资源
+#   make clean     清理
+
+CXX      = g++
+WINDRES  = windres
+SRCDIR   = src
+BUILDDIR = build
+BIN      = NATextGenerator.exe
+RES      = $(BUILDDIR)/app.res
+
+INCS     = -I"libs/include/freetype2"
+CXXFLAGS = -std=c++17 -O2 -Wall -Wextra $(INCS)
+LIBS     = libs/lib/libfreetype.a -static-libstdc++ -static-libgcc -lshell32 -lws2_32
+
+SRCS = $(wildcard $(SRCDIR)/*.cpp)
+
+.PHONY: all assets clean
+
+all: $(BIN)
+
+$(BUILDDIR):
+	mkdir -p $(BUILDDIR)
+
+assets:
+	python tools/embed_web.py
+
+$(RES): NATextGenerator_private.rc icon.rc icon.ico | $(BUILDDIR)
+	$(WINDRES) "--preprocessor=gcc.exe -E -xc-header -DRC_INVOKED" \
+		-i NATextGenerator_private.rc --input-format=rc -o $(RES) -O coff
+
+$(BIN): $(SRCS) $(RES)
+	$(CXX) $(CXXFLAGS) $(SRCS) $(RES) -o $(BIN) $(LIBS)
+
+clean:
+	rm -rf $(BUILDDIR) $(BIN)
